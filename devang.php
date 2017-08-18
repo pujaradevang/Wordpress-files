@@ -207,189 +207,7 @@ function custom_post_types() {
     ));
 }
 add_action( 'init', 'custom_post_types' );
-
-
-/*WorkPlace Listing*/
-add_shortcode( 'workplace_listing', 'display_workplace_listing' );
-
-function display_workplace_listing($atts){  
-        global $post;
-        $paged = get_query_var('paged') ? get_query_var('paged') : 1;
-        $post_per_page = $_GET['post_per_page'] ? $_GET['post_per_page'] :10;
-        
-        $args = array(
-            'post_type' => 'workplace-pledge',
-            'post_status' => 'publish',
-            'posts_per_page' => $post_per_page,
-            'orderby'   => 'date', 
-            'order'    => 'DESC',
-            'paged' => $paged, 
-           
-        );
-        
-      
-         if (!empty($_GET['search']) && !empty($_GET['filter_type'])) {
-             
-             if($_GET['filter_type']== "meta") {
-
-                $args['meta_query'] = array(
-                    'relation' => 'OR', array(
-                    'key' => $_GET['filter_value'],
-                    'value' => $_GET['search'],
-                    'compare' => 'LIKE'
-                    )
-                );
-             }
-            if($_GET['filter_type']== "taxonomy") {
-            
-                $args['tax_query'] = array(
-                     'relation' => 'OR', array(
-                                    'taxonomy' => $_GET['filter_value'],
-                                     'terms' => $_GET['search'],
-                                     'field' => 'slug',
-                                     'operator'  => 'IN',
-                                  ));
-            }
-        }
-        //echo "<pre>";print_r($args);echo "</pre>";
-        add_filter('posts_where','custom_and_or');
-        $query = new WP_Query( $args );      
-        /* echo "<pre>";
-        var_dump($query);
-        echo "</pre>";*/
-        $output = '<div class="home-personal-details-form">';
-        if( $query->have_posts() ){
-            $output .= '
-               <table class="workplace-listing tablesorter" id="myTable">
-                  <thead>
-                  <tr class="workplace-title">  
-                    <th class="c-name header">Company Name</th>  
-                    <th class="type header">Company Type</th>  
-                    <th class="c-city header">City</th>  
-                    <th class="c-state header">State</th>  
-                  </tr> </thead><tbody>';
-            while( $query->have_posts() ){
-                $query->the_post();
-                $company_meta = get_post_meta($post->ID);
-              
-                /*company Type*/
-              $company_type = get_the_terms($post->ID, 'designations'); 
-              if(!empty($company_type)) {
-              foreach($company_type as $company_term){
-                 $companytype = $company_term->name;                 
-              } }
-              
-              $workplace_state = get_the_terms($post->ID, 'workplace-state'); 
-              if(!empty($workplace_state)) {
-              foreach($workplace_state as $workplacestate_term){
-                 $workplacestate = $workplacestate_term->name;    
-              } }
-              
-
-               foreach ($company_meta as $k => $v) {
-                    $company_meta[$k] = array_shift($v);
-                  }
-                $output .= 
-                '<tr class="listing-data">  
-                <td data-label="Company Name">'.$company_meta['wpcf-company-name'].'</td>
-                <td data-label="Company Type">'.$companytype.'</td>
-                <td data-label="City">'.$company_meta['wpcf-city'].'</td>
-                <td class="work-state" data-label="State">'.$workplacestate.'</td>
-                
-              </tr>';
-            }
-            $output .= '</tbody></table>';
-            
-            if (function_exists("pagination")) {
-                 $output .= pagination($query->max_num_pages);
-             }
-            
-            if(get_query_var( 'search')){
-               $search = get_query_var( 'search');
-               $filter_value = $_GET['filter_value'];
-               $filter_type = $_GET['filter_type'];
-               //echo $search;
-               $search_query = str_replace(" ","+",$search);
-            
-               $test = '&search='.$search_query.'&filter_value='.$filter_value.'&filter_type='.$filter_type.'';
-              
-            }
-           
-
-            $output .='<div class="set-limit"><div class="limit-title">Set Limit Per Page :</div>';
-            $output .= '<div class="limit-data">'
-                    .'<a href='.get_site_url().'/why-partner/?post_per_page=10'.$test.'>10</a> '
-                    .'<a href='.get_site_url().'/why-partner/?post_per_page=30'.$test.'>30</a> '
-                    .'<a href='.get_site_url().'/why-partner/?post_per_page=50'.$test.'>50</a> '
-                    .'<a href='.get_site_url().'/why-partner/?post_per_page=70'.$test.'>70</a> ';
-            $output .='</div></div>';
-          
-    } else {
-        
-        $output .='<div class="no-result">No result Found</div>';
-    }
-      $output .='</div>';
-        wp_reset_postdata();
-        return $output;
-    
-}
-
-function simple_search_shortcode()
-{
-    If(get_query_var('search') != null ){ $search_value = get_query_var('search');}
-    $search_param = '
-    <form role="search" method="get" id="searchform" action="" >         
-       <div class="row">        
-           <div class="col-md-12 data-search">
-			<label>Data Search:</label>
-                        <input type="text" name="search" value="'.$search_value.'">
-			</div>
-			 <div class="col-md-12">
-				<div class="filter-wrap">
-					<label>Filter By:</label>
-					<select name="filter_value" id="filter_val">
-					<option value="wpcf-company-name" data-info="meta">Company Name</option>
-					<option value="designations" data-info="taxonomy">Company Type</option>
-					<option value="wpcf-city" data-info="meta">City</option>
-					<option value="workplace-state" data-info="taxonomy">State</option>              
-					</select>
-				</div>
-                                 <input type="hidden" name="filter_type" value="meta" id="hidden">
-				   <div class="yellow-button button-box">
-                   <input type="submit" name="submit" value="Submit">
-                </div>
-			 </div>
-       </div>
-    </form>
-    ';
-    return $search_param;
-}
-add_shortcode('listing_search', 'simple_search_shortcode');
-
-/*function for remove and and add or*/
-function custom_and_or($where){
-	// change some OR/AND to our needs	
-        $where = str_replace(") AND ( ",") OR ( ",$where);
-	return $where;
-}
-add_action('wp_head', 'create_directory_func'); 
-
-function create_directory_func(){ 
-?>
-    <script type="text/javascript">
-        jQuery(document).ready(function () {
-            jQuery("#filter_val").change(function() {
-                
-                var start = this.value;
-                //var att =jQuery(start).find(':selected').data('info');
-                var att = jQuery(this).find(':selected').attr('data-info')
-            //    alert(att);
-                jQuery("#hidden").val(att);
-            });          
-        });
-    </script>
-<?php }
-
+// add metabox
 add_action( 'add_meta_boxes', 'books_meta_box_add' );
 function books_meta_box_add()
 {
@@ -404,7 +222,7 @@ $selected = isset( $values['my_meta_box_select'] ) ? esc_attr( $values['my_meta_
 
     ?>
     <p>
-        <label for="my_meta_box_text">Text Label</label>
+        <label for="my_meta_box_text">Book Price</label>
         <input type="text" name="my_meta_box_text" id="my_meta_box_text" value="<?php echo get_post_meta($post->ID, "my_meta_box_text", true); ?>" />
     </p>
      
@@ -419,7 +237,7 @@ $selected = isset( $values['my_meta_box_select'] ) ? esc_attr( $values['my_meta_
         </select>
     </p>
 <?php  }
-
+// save meta box values
 function save_custom_meta_box($post_id, $post, $update)
 {
     global $post;
@@ -443,3 +261,136 @@ function save_custom_meta_box($post_id, $post, $update)
 }
 
 add_action("save_post", "save_custom_meta_box", 10, 3);
+
+// Book search form
+function books_search_shortcode()
+{
+    if(isset($_POST['submit'])){
+        $book_price = $_POST['book-price'];
+        $book_rating = $_POST['book-rating'];
+        $book_category = $_POST['book-category'];
+    }
+
+    $tax_terms = get_terms('books-category', array('hide_empty' => '0'));
+    $search_param = '
+    <form role="search" method="post" id="searchform" action="" >         
+       <div class="row">
+            <div class="col-md-12 data-search">
+			<label>Book Price:</label>
+                        <input type="text" name="book-price" value="'.$book_price.'">
+            </div>
+            <div class="col-md-12 data-search">
+			<label>Book Rating:</label>
+                       <select name="book-rating" id="book-rating">
+                       <option value="" >Select Book Rating</option>
+                        <option value="one">one</option>
+                        <option value="two">two</option>
+                        <option value="three">three</option>
+                        <option value="four">four</option>
+                        <option value="five">five</option>
+                    </select>
+            </div>
+            <div class="col-md-12 data-search">
+                            <label>Book Category:</label>
+                           <select name="book-category" id="book-category">
+                           <option value="" >Select Book Category</option>';
+                           foreach ( $tax_terms as $tax_term ):  
+                               $search_param .='<option value="'.$tax_term->name.'">'.$tax_term->name.'</option>';  
+                           endforeach;
+                        $search_param .= '</select>
+                </div>	 
+                <div class="yellow-button button-box">
+                   <input type="submit" name="submit" value="Submit">
+                </div>
+			 </div>
+       </div>
+    </form>
+    ';
+    return $search_param;
+}
+add_shortcode('listing_search', 'books_search_shortcode');
+/*Book as per form search Listing*/
+add_shortcode( 'books_listing', 'display_books_listing' );
+
+function display_books_listing($atts){  
+    
+    if(isset($_POST['submit'])){
+        $book_price = $_POST['book-price'];
+        $book_rating = $_POST['book-rating'];
+        $book_category = $_POST['book-category'];
+    
+     $args = array(
+            'post_type' => 'books',
+            'post_status' => 'publish',
+            'orderby'   => 'date', 
+            'order'    => 'DESC',
+        );
+    if($book_price){
+        $args['meta_query'] = array(
+                    'relation' => 'OR', array(
+                    'key' => 'my_meta_box_text',
+                    'value' => $book_title,
+                    'compare' => 'LIKE'
+                    )
+        );
+    }
+    if($book_rating){
+       $args['meta_query'] = array(
+                    'relation' => 'OR', array(
+                    'key' => 'my_meta_box_select',
+                    'value' => $book_rating,
+                    'compare' => 'LIKE'
+                    )
+        );
+    }
+    if($book_category){
+        $args['tax_query'] = array(
+                     'relation' => 'OR', array(
+                                    'taxonomy' => 'books-category',
+                                     'terms' => $book_category,
+                                     'field' => 'slug',
+                                     'operator'  => 'IN',
+                                  ));
+    }
+    
+    $query = new WP_Query( $args );      
+//    echo "<pre>";
+//    var_dump($query);
+//    echo "</pre>";
+     $output = '<div class="home-personal-details-form">';
+        if( $query->have_posts() ){
+            $output .= '
+               <table class="workplace-listing tablesorter" id="myTable">
+                  <thead>
+                  <tr class="workplace-title">  
+                    <th class="c-name header">Book Name</th>  
+                    <th class="type header">Book Price</th>  
+                    <th class="c-city header">Book Rating</th>  
+                    <th class="c-state header">Book Category</th>  
+                  </tr> </thead><tbody>';
+            while( $query->have_posts() ){
+                $query->the_post();
+                $search_book_price = get_post_meta(get_the_ID(), 'my_meta_box_text', TRUE);
+                $search_book_rating = get_post_meta(get_the_ID(), 'my_meta_box_select', TRUE);
+                $search_book_category = get_the_terms(get_the_ID(), 'books-category'); 
+                    if(!empty($search_book_category)) {
+                    foreach($search_book_category as $book_term){
+                       $book_category_list = $book_term->name;   
+                       
+                    } }
+ 
+                $output .= 
+                '<tr class="listing-data">  
+                <td data-label="Company Name">'.get_the_title().'</td>
+                <td data-label="Company Type">'.$search_book_price.'</td>
+                <td data-label="City">'.$search_book_rating.'</td>
+                <td class="work-state" data-label="State">'.$book_category_list.'</td>
+                
+              </tr>';
+            }
+        }
+            $output .= '</tbody></table>';
+            
+            return $output;
+}
+}
