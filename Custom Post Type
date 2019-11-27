@@ -1,0 +1,110 @@
+
+function custom_get_post_types() {
+    $custom_post_types_arr = array();
+  
+    $custom_post_types_arr[] = array(
+       'singular'  => 'Portfolio',
+       'plural'    => 'Portfolios',
+       'slug'      => 'portfolio',       
+    );
+  
+    return $custom_post_types_arr;
+}
+function custom_get_category_types() {
+    $category_types_arr = array();
+  
+    $category_types_arr[] = array(
+       'singular'  => 'Portfolio Type',
+       'plural'    => 'Portfolio Types',
+       'slug'      => 'portfolio-type',
+       'post_type' => 'portfolio',      
+    );   
+  
+    return $category_types_arr;
+}  
+//***************************************************************************
+// Initialize custom post types
+//***************************************************************************
+function custom_post_types() {
+/***************************************************************************
+Setup the resources custom post types
+/***************************************************************************
+ */
+$post_types = custom_get_post_types();
+
+    foreach( $post_types as $post_type ) {
+        if($post_type['slug'] == 'portfolio'){
+            $args = array(
+                'labels' => array(
+                    'name'          => $post_type['plural'],
+                    'singular_name' => $post_type['singular'],
+                    'add_new_item'  => 'Add New ' . $post_type['singular'],
+                    'edit_item'     => 'Edit ' . $post_type['singular'],
+                    'new_item'      => 'New ' . $post_type['singular'],
+                    'view_item'     => 'View ' . $post_type['singular']
+                ),
+                'public'            => true,
+                'publicly_queryable' => false,
+                'has_archive'       => false,
+                'show_in_nav_menus' => true,
+                'supports'          => array( 'title', 'editor', 'excerpt', 'thumbnail' ),
+                'menu_icon'         => $post_type['dashicon'],
+                'rewrite'           => array( 'slug' => $post_type['slug'], 'with_front' => false )
+            );
+        }else{
+            $args = array(
+                'labels' => array(
+                    'name'          => $post_type['plural'],
+                    'singular_name' => $post_type['singular'],
+                    'add_new_item'  => 'Add New ' . $post_type['singular'],
+                    'edit_item'     => 'Edit ' . $post_type['singular'],
+                    'new_item'      => 'New ' . $post_type['singular'],
+                    'view_item'     => 'View ' . $post_type['singular']
+                ),
+                'public'            => true,
+                'has_archive'       => false,
+                'show_in_nav_menus' => true,
+                'supports'          => array( 'title', 'editor', 'excerpt', 'thumbnail' ),
+                'menu_icon'         => $post_type['dashicon'],
+                'rewrite'           => array( 'slug' => $post_type['slug'], 'with_front' => false )
+            );
+        }
+        register_post_type( $post_type['slug'], $args );
+    }
+}
+add_action( 'init', 'custom_post_types' );
+function custom_taxonomy_types(){
+    //***************************************************************************
+    // Custom taxonomy shared to the respective post type
+    //***************************************************************************
+    $post_type_categories = custom_get_category_types();
+
+    foreach( $post_type_categories as $post_type_category ) {        
+        register_taxonomy( $post_type_category['slug'], array($post_type_category['post_type']), array(
+            'hierarchical'          => true,
+            'labels'                => array(
+                'name'                       => $post_type_category['singular'],
+                'singular_name'              => $post_type_category['singular'],
+                'search_items'               => 'Search ' . $post_type_category['plural'],
+                'popular_items'              => 'Popular' . $post_type_category['plural'],
+                'all_items'                  => 'All' . $post_type_category['plural'],
+                'parent_item'                => null,
+                'parent_item_colon'          => null,
+                'edit_item'                  => 'Edit' . $post_type_category['singular'],
+                'update_item'                => 'Update' . $post_type_category['singular'],
+                'add_new_item'               => 'Add New ' . $post_type_category['singular'],
+                'new_item_name'              => 'New Resource ' . $post_type_category['singular'],
+                'add_or_remove_items'        => 'Add or remove ' . $post_type_category['singular'],
+                'choose_from_most_used'      => 'Choose from the most used ' . $post_type_category['plural'],
+                'not_found'                  => 'No resource ' . $post_type_category['plural'].' found.',
+                'menu_name'                  => $post_type_category['plural'],
+            ),
+            'show_ui'               => true,
+            'show_in_nav_menus'     => false,
+            'show_admin_column'     => true,
+            'query_var'             => true,
+            'rewrite'               => array( 'slug' => $post_type_category['slug'] )
+        ));
+    }
+}
+add_action( 'init','custom_taxonomy_types' );
